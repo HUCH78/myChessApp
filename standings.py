@@ -1,0 +1,105 @@
+from pairing import color_history
+
+
+def points_from_result(player_id: int, game) -> float:
+    result = game.get("result")
+    if not result:
+        return 0.0
+    if game.get("is_bye") and game.get("white_id") == player_id:
+        return 1.0 if result == "1-0" else 0.0
+    if game.get("white_id") == player_id:
+        if result == "1-0":
+            return 1.0
+        if result == "1/2-1/2":
+            return 0.5
+        return 0.0
+    if game.get("black_id") == player_id:
+        if result == "0-1":
+            return 1.0
+        if result == "1/2-1/2":
+            return 0.5
+        return 0.0
+    return 0.0
+
+
+def opponent_id(player_id: int, game):
+    if game.get("is_bye"):
+        return None
+    if game.get("white_id") == player_id:
+        return game.get("black_id")
+    if game.get("black_id") == player_id:
+        return game.get("white_id")
+    return None
+
+
+def compute_player_stats(players, games):
+    stats = {}
+    for player in players:
+        pid = player["id"]
+        pts = 0.0
+        wins = 0
+        opponents = []
+        for game in games:
+            if game.get("white_id") != pid and game.get("black_id") != pid:
+                continue
+            gained = points_from_result(pid, game)
+            pts += gained
+            if gained == 1.0 and not game.get("is_bye"):
+                wins += 1
+            opp = opponent_id(pid, game)
+            if opp:
+                opponents.append(opp)
+        stats[pid] = {
+            **player,
+            "score": pts,
+            "wins": wins,
+            "opponents": opponents,
+            "colors": color_history(pid, games),
+        }
+    for pid, row in stats.items():
+        row["buchholz"] = sum(stats[opp]["score"] for opp in row["opponents"] if opp in stats)
+    return stats
+
+
+def direct_encounter(stats, player_a: int, player_b: int, games) -> float:
+    points = 0.0
+    for game in games:
+        if not game.get("result") or game.get("is_bye"):
+            continue
+        ids = {game.get("white_id"), game.get("black_id")}
+        if ids != {player_a, player_b}:
+            continue
+        points += points_from_result(player_a, game)
+    return points
+
+
+def standing_key(stats, player_id: int, tiebreaks, games, group_ids):
+    row = stats[player_id]
+    key = [-row["score"]]
+    for tb in tiebreaks:
+        if tb == "buchholz":
+            key.append(-row["buchholz"])
+        elif tb == "wins":
+            key.append(-row["wins"])
+        elif tb == "direct":
+            direct = sum(
+                direct_encounter(stats, player_id, other, games)
+                for other in group_ids
+                if other != player_id
+            )
+            key.append(-direct)
+        else:
+            key.append(0)
+    key.append(row.get("tpn") or 9999)
+    return tuple(key)
+
+
+def ranked_standings(players, games, tiebreaks):
+    stats = compute_player_stats(players, games)
+    ids = [p["id"] for p in players]
+    ordered = sorted(ids, key=lambda pid: standing_key(stats, pid, tiebreaks, games, ids))
+    rows = []
+    for rank, pid in enumerate(ordered, start=1):
+        row = stats[pid]
+        rows.append({**row, "rank": rank})
+    return rows
