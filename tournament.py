@@ -7,6 +7,7 @@ from db import (
     load_games,
     load_players,
     load_rounds,
+    reset_tournament_keep_players,
     save_pairings,
     set_round_status,
     set_tournament_status,
@@ -139,6 +140,10 @@ def close_and_next() -> str:
     if error:
         return error
     return generate_pairings()
+
+
+def finish_tournament() -> None:
+    reset_tournament_keep_players()
 
 
 def abort_round() -> str:

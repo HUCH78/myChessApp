@@ -3,11 +3,16 @@ from pathlib import Path
 
 DB_PATH = Path(__file__).resolve().parent / "chess.db"
 
+TIEBREAK_NONE = "none"
+
 TIEBREAK_OPTIONS = {
+    TIEBREAK_NONE: "Keine",
     "buchholz": "Buchholz",
     "direct": "Direkter Vergleich",
     "wins": "Anzahl Siege",
 }
+
+PLAYER_CSV_HEADERS = ["ID", "Vorname", "Nachname", "Verein", "DWZ", "Status"]
 
 
 def get_connection() -> sqlite3.Connection:
@@ -116,14 +121,31 @@ def set_tournament_status(status: str, current_round: int = None, top_board_colo
         conn.commit()
 
 
-def add_player(vorname: str, nachname: str, verein: str, dwz: int, dsb_id: str = None) -> None:
+def cascade_tiebreaks(tb1: str, tb2: str, tb3: str):
+    if tb1 == TIEBREAK_NONE:
+        return TIEBREAK_NONE, TIEBREAK_NONE, TIEBREAK_NONE
+    if tb2 == TIEBREAK_NONE:
+        return tb1, TIEBREAK_NONE, TIEBREAK_NONE
+    return tb1, tb2, tb3
+
+
+def active_tiebreaks(settings) -> list:
+    values = []
+    for key in (settings.get("tiebreak1"), settings.get("tiebreak2"), settings.get("tiebreak3")):
+        if not key or key == TIEBREAK_NONE:
+            break
+        values.append(key)
+    return values
+
+
+def add_player(vorname: str, nachname: str, verein: str, dwz: int, dsb_id: str = None, active: bool = True) -> None:
     with get_connection() as conn:
         conn.execute(
             """
             INSERT INTO players (vorname, nachname, verein, dwz, dsb_id, active)
-            VALUES (?, ?, ?, ?, ?, 1)
+            VALUES (?, ?, ?, ?, ?, ?)
             """,
-            (vorname, nachname, verein, dwz, dsb_id),
+            (vorname, nachname, verein, dwz, dsb_id, 1 if active else 0),
         )
         conn.commit()
 
@@ -270,4 +292,28 @@ def save_pairings(round_id: int, boards) -> None:
 def set_game_result(game_id: int, result: str) -> None:
     with get_connection() as conn:
         conn.execute("UPDATE games SET result = ? WHERE id = ?", (result, game_id))
+        conn.commit()
+
+
+def delete_all_players() -> str:
+    with get_connection() as conn:
+        if conn.execute("SELECT 1 FROM games LIMIT 1").fetchone():
+            return "Bitte zuerst das Turnier abschließen. Dann kann die Teilnehmerliste gelöscht werden."
+        conn.execute("DELETE FROM players")
+        conn.commit()
+    return ""
+
+
+def reset_tournament_keep_players() -> None:
+    with get_connection() as conn:
+        conn.execute("DELETE FROM games")
+        conn.execute("DELETE FROM rounds")
+        conn.execute("UPDATE players SET tpn = NULL")
+        conn.execute(
+            """
+            UPDATE settings
+            SET status = 'setup', current_round = 0
+            WHERE id = 1
+            """
+        )
         conn.commit()

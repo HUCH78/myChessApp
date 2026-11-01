@@ -43,6 +43,14 @@ Neue Wünsche unter der nächsten freien Nummer ergänzen.
 
 **2.1.5** Zusätzlich können Spieler über die Schnittstelle des DSB-Wertungsportals gesucht und zum Turnier hinzugefügt werden. — *Umgesetzt*
 
+**2.1.5.1** Die DSB-Suche ist die Standard-Eingabe; die manuelle Personenerfassung ist nachgeordnet. — *Umgesetzt*
+
+**2.1.5.2** Nach Übernahme eines DSB-Spielers wird die Suchmaske geleert. — *Umgesetzt*
+
+**2.1.6** Die gesamte Teilnehmerliste kann nach Bestätigung gelöscht werden. — *Umgesetzt*
+
+**2.1.7** Eine Teilnehmerliste kann im CSV-Format der Exportfunktion importiert werden. — *Umgesetzt*
+
 ### 2.2 Übersicht
 
 **2.2.1** Unter dem Formular erscheint eine Tabelle aller Teilnehmer aus der Datenbank. — *Umgesetzt*
@@ -85,6 +93,8 @@ Neue Wünsche unter der nächsten freien Nummer ergänzen.
 
 **3.3.3** Anzahl Siege. — *Umgesetzt*
 
+**3.3.4** Feinwertung **Keine**; nachfolgende Feinwertungen werden ebenfalls auf Keine gesetzt. — *Umgesetzt*
+
 ---
 
 ## 4 Turnierverwaltung
@@ -121,10 +131,25 @@ Neue Wünsche unter der nächsten freien Nummer ergänzen.
 
 **4.3.8** Kreuztabelle anzeigen. — *Umgesetzt*
 
-**4.4** Jede Ansicht (Teilnehmer, Paarungen, Rangliste, Kreuztabelle) kann als HTML, PDF und CSV exportiert werden. — *Umgesetzt*
+**4.3.9** Runden vor- und zurück navigieren und Ergebnisse einsehen. — *Umgesetzt*
+
+**4.3.10** Ergebnisse früherer Runden nach Rückfrage ändern. — *Umgesetzt*
+
+**4.3.11** Paarungen zeigen den Punktestand der Teilnehmer. — *Umgesetzt*
+
+**4.3.12** Rangliste zeigt „Nach Runde x von y“. — *Umgesetzt*
+
+**4.3.13** Rangliste zeigt alle eingestellten Feinwertungen in der konfigurierten Reihenfolge. — *Umgesetzt*
+
+**4.3.14** Fortschrittstabelle. — *Umgesetzt*
+
+**4.3.15** Turnier jederzeit abschließen (Datensicherung bestätigen, erneut bestätigen). Rundenergebnisse werden gelöscht, Teilnehmer bleiben. — *Umgesetzt*
+
+**4.4** Jede Ansicht (Teilnehmer, Paarungen, Rangliste, Kreuztabelle, Fortschritt) kann als HTML, PDF und CSV exportiert werden. — *Umgesetzt*
 
 ---
 
 ## 5 Offene Wünsche
 
-Hier die nächste freie Nummer vergeben.
+Hier die nächste freie Nummer vergeben.  
+     

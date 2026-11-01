@@ -38,12 +38,15 @@ def compute_player_stats(players, games):
         pid = player["id"]
         pts = 0.0
         wins = 0
+        played_points = 0.0
         opponents = []
         for game in games:
             if game.get("white_id") != pid and game.get("black_id") != pid:
                 continue
             gained = points_from_result(pid, game)
             pts += gained
+            if not game.get("is_bye"):
+                played_points += gained
             if gained == 1.0 and not game.get("is_bye"):
                 wins += 1
             opp = opponent_id(pid, game)
@@ -53,6 +56,7 @@ def compute_player_stats(players, games):
             **player,
             "score": pts,
             "wins": wins,
+            "played_points": played_points,
             "opponents": opponents,
             "colors": color_history(pid, games),
         }
@@ -77,6 +81,8 @@ def standing_key(stats, player_id: int, tiebreaks, games, group_ids):
     row = stats[player_id]
     key = [-row["score"]]
     for tb in tiebreaks:
+        if not tb or tb == "none":
+            continue
         if tb == "buchholz":
             key.append(-row["buchholz"])
         elif tb == "wins":
@@ -88,8 +94,6 @@ def standing_key(stats, player_id: int, tiebreaks, games, group_ids):
                 if other != player_id
             )
             key.append(-direct)
-        else:
-            key.append(0)
     key.append(row.get("tpn") or 9999)
     return tuple(key)
 
@@ -103,3 +107,52 @@ def ranked_standings(players, games, tiebreaks):
         row = stats[pid]
         rows.append({**row, "rank": rank})
     return rows
+
+
+def format_points(value: float) -> str:
+    if value == int(value):
+        return str(int(value))
+    return str(value).replace(".5", "½")
+
+
+def progress_rows(players, games, tiebreaks):
+    standings = ranked_standings(players, games, tiebreaks)
+    round_numbers = sorted({g["round_number"] for g in games})
+    tpn_by_id = {p["id"]: p.get("tpn") or "" for p in players}
+    rows = []
+    for row in standings:
+        pid = row["id"]
+        cells = {
+            "rank": row["rank"],
+            "name": f"{row['vorname']} {row['nachname']}".strip(),
+            "score": row["score"],
+            "rounds": {},
+        }
+        for number in round_numbers:
+            game = next(
+                (
+                    g
+                    for g in games
+                    if g["round_number"] == number
+                    and (g.get("white_id") == pid or g.get("black_id") == pid)
+                ),
+                None,
+            )
+            if game is None:
+                cells["rounds"][number] = "–"
+                continue
+            if game.get("is_bye"):
+                cells["rounds"][number] = "+"
+                continue
+            if game.get("white_id") == pid:
+                color = "w"
+                opp = game.get("black_id")
+            else:
+                color = "s"
+                opp = game.get("white_id")
+            pts = points_from_result(pid, game) if game.get("result") else None
+            opp_tpn = tpn_by_id.get(opp, "?")
+            pts_text = format_points(pts) if pts is not None else "?"
+            cells["rounds"][number] = f"{opp_tpn}{color} {pts_text}"
+        rows.append(cells)
+    return rows, round_numbers
